@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { Q } from '@nozbe/watermelondb';
+import DOMParser from 'advanced-html-parser';
 import log from '../utils/log';
 import { database } from '../database';
+import { extractString } from '../utils/common';
 
 interface ISourceManga {
   i: string; // slug/identifier
@@ -33,7 +35,7 @@ class MangaSee {
       return exists[0];
     } catch (err) {
       log(err);
-      throw new Error('Init source failed');
+      throw new Error();
     }
   }
 
@@ -64,12 +66,67 @@ class MangaSee {
 
       return result;
     } catch (err) {
-      throw new Error('Sync source failed');
+      throw new Error();
     }
   }
 
-  async getMangaDetails(title: string) {
-    this.api.get(`/manga/${title}`);
+  async search(query: string) {
+    try {
+      return database
+        .get('mangas')
+        .query(
+          Q.or(
+            Q.where('title', Q.like(`%${Q.sanitizeLikeString(query)}%`)),
+            Q.where('title_alt', Q.like(`%${Q.sanitizeLikeString(query)}%`))
+          )
+        )
+        .fetch();
+    } catch (err) {
+      log(err);
+      throw new Error();
+    }
+  }
+
+  async parseChapterList(slug: string) {
+    try {
+      const response = await this.api.get(`/manga/${slug}`, {
+        responseType: 'text',
+      });
+
+      const doc = DOMParser.parse(response.data, { onlyBody: true });
+      const scriptElements =
+        doc.documentElement.querySelectorAll('body script');
+      let mainFnStr = '';
+
+      scriptElements.forEach((el) => {
+        if (el.innerHTML && el.innerHTML.includes('MainFunction')) {
+          mainFnStr = el.innerHTML;
+        }
+      });
+
+      const chapterListStr = extractString(mainFnStr, {
+        afterKeyword: 'vm.Chapters = ',
+        beforeKeyword: ';',
+      });
+
+      const chapterList = JSON.parse(chapterListStr);
+
+      return chapterList || [];
+    } catch (err) {
+      log(err);
+      throw new Error();
+    }
+  }
+
+  async getChapterList(slug: string) {
+    try {
+      const chapterList = await this.parseChapterList(slug);
+      log(chapterList);
+      return chapterList;
+    } catch (err) {
+      log(err);
+      throw new Error();
+    }
   }
 }
 

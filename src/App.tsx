@@ -1,12 +1,19 @@
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { Alert, Button, StyleSheet, Text, View } from 'react-native';
-import IDOMParser from 'advanced-html-parser';
-import { mangaSeeSource } from './source/MangaSee';
-import log from './utils/log';
+import { NativeBaseProvider } from 'native-base';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreen from './screens/HomeScreen';
+import DetailsScreen from './screens/DetailsScreen';
+import ReadingScreen from './screens/ReadingScreen';
+
+export type TStackParamsList = {
+  HomeScreen: undefined;
+  DetailsScreen: { mangaId: string; slug?: string };
+  ReadingScreen: { slug?: string };
+};
+
+const Stack = createNativeStackNavigator<TStackParamsList>();
 
 export default function App() {
-  const [isSynching, setIsSynching] = useState(false);
   // useEffect(() => {
   //   fetch(url)
   //     .then((res) => res.text())
@@ -27,35 +34,15 @@ export default function App() {
   //     });
   // }, []);
 
-  const handleSyncSource = async () => {
-    try {
-      setIsSynching(true);
-      await mangaSeeSource.syncSource();
-    } catch (err) {
-      log(err);
-      Alert.alert('Sync Failed', 'Something wrong happen');
-    } finally {
-      setIsSynching(false);
-    }
-  };
-
   return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
-
-      <Button
-        title={isSynching ? 'Synching...' : 'Sync Source'}
-        onPress={handleSyncSource}
-      />
-    </View>
+    <NativeBaseProvider>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen name="HomeScreen" component={HomeScreen} />
+          <Stack.Screen name="DetailsScreen" component={DetailsScreen} />
+          <Stack.Screen name="ReadingScreen" component={ReadingScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </NativeBaseProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

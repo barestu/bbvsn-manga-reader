@@ -20,5 +20,15 @@ export default appSchema({
         { name: 'cover_url', type: 'string', isOptional: true },
       ],
     }),
+    tableSchema({
+      name: 'chapters',
+      columns: [
+        { name: 'slug', type: 'string' },
+        { name: 'name', type: 'string' },
+        { name: 'type', type: 'string', isOptional: true },
+        { name: 'manga_id', type: 'string' },
+        { name: 'published_at', type: 'string', isOptional: true },
+      ],
+    }),
   ],
 });
